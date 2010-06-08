@@ -12,17 +12,39 @@ var vows = require('vows');
 var resourcer = require('resourcer');
 
 vows.describe('resourcer/engine').addVows({
-    "Resource()": {
+    "Factory": {
         topic: function () {
-            resourcer.use(resourcer.engines.file).connect('/tmp/file_engine_test.json').connection.load({
-                bob: { _id: 42, age: 35, hair: 'black'},
-                tim: { _id: 43, age: 16, hair: 'brown'},
-                mat: { _id: 44, age: 29, hair: 'black'}
+            resourcer.use(resourcer.engines.memory).connect();
+
+            new(resourcer.engines.memory.Connection)('Person').load({
+                1: { _id: 1, name: 'Peter', age: 30}
             });
-            return resourcer.defineResource('person');
+            return resourcer.defineResource('Person');
         },
-        "should get initialize the store": function (Person) {
-            assert.equal (true, true);
+        "should initialize the store": function (Person) {
+           assert.instanceOf (resourcer.connection, resourcer.engines.file.Connection);
+        },
+        "should be resource": function (Person) {
+            assert.equal (Person.resource, 'Person');
+        },
+        "Create": {
+            topic: function (Person) {
+                Person.create({_id: 2, name: "Lori", age: 10 }, this.callback);
+            },
+            "Should provide a valid event": function (err, ev) {
+                assert.isNull(err);
+                assert.equal(201, ev.status);
+            }
+        },
+        "Find": {
+            topic: function (Person) {
+                Person.find({name: "Peter"}, this.callback);
+            },
+            "Should extract Peter": function(err, results){
+                assert.isNull(err);
+                assert.instanceOf(results, Array);
+                assert.length(results, 1);
+            }
         }
     }
-});
+}).export(module);
